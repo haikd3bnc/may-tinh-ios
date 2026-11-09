@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Máy tính">
+<meta name="theme-color" content="#141218">
+<title>Máy tính</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141218; --text:#e6e0e9; --muted:#948f99; --sep:#6f6a78;
+  --num:#2b2930; --num-t:#e6e0e9; --op:#4a4458; --op-t:#e8def8;
+  --ac:#633b48; --ac-t:#ffd8e4; --eq:#d0bcff; --eq-t:#381e72;
+  --sci-t:#cac4d0; --sci-on:#4a4458; --panel:#211f26; --accent:#d0bcff; --err:#f2b8b5;
+  --r:44px; color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);transition:background-color .3s;
+  font-family:Roboto,system-ui,-apple-system,sans-serif;overflow:hidden;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+.app{height:100vh;height:100dvh;max-width:520px;margin:0 auto;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 12px);position:relative}
+.topbar{height:48px;display:flex;align-items:center;justify-content:space-between;flex:none}
+.iconbtn{width:44px;height:44px;border:0;border-radius:22px;background:transparent;color:var(--sci-t);
+  display:grid;place-items:center;cursor:pointer}
+.iconbtn:active{background:var(--num)}
+.mode-tag{font-size:13px;color:var(--muted);letter-spacing:.06em;padding:0 6px}
+.tr{display:flex;align-items:center;gap:2px}
+
+/* ---------- theme sheet ---------- */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-radius:28px 28px 0 0;
+  padding:8px 20px calc(env(safe-area-inset-bottom) + 24px);transform:translateY(105%);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1), background-color .3s;z-index:6;box-shadow:0 -8px 24px rgba(0,0,0,.25)}
+.sheet.open{transform:none}
+.sheet .handle{margin:0 auto 14px}
+.sheet h3{font-size:14px;font-weight:500;color:var(--muted);margin:18px 4px 10px;letter-spacing:.02em}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--sep);border-radius:22px;overflow:hidden}
+.seg button{height:44px;border:0;background:transparent;color:var(--text);font:500 15px Roboto,system-ui,sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:background-color .2s}
+.seg button+button{border-left:1px solid var(--sep)}
+.seg button.on{background:var(--op);color:var(--op-t)}
+.sw{display:flex;justify-content:space-between;gap:8px}
+.swatch{flex:1;max-width:60px;aspect-ratio:1;border-radius:50%;border:0;cursor:pointer;position:relative;padding:0;
+  display:grid;place-items:center;overflow:hidden;transition:border-radius .2s}
+.swatch .half{position:absolute;inset:50% 0 0 0}
+.swatch .q{position:absolute;left:50%;right:0;top:50%;bottom:0}
+.swatch svg{position:relative;opacity:0;transition:opacity .2s}
+.swatch.on{border-radius:18px;outline:2px solid var(--text);outline-offset:3px}
+.swatch.on svg{opacity:1}
+.swname{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
+.swname span{flex:1;max-width:60px;text-align:center;font-size:12px;color:var(--muted)}
+
+/* ---------- display ---------- */
+.display{flex:1;min-height:140px;overflow-y:auto;display:flex;flex-direction:column;padding:4px 10px 8px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.display::-webkit-scrollbar{display:none}
+.dinner{margin-top:auto;text-align:right}
+.expr{font-size:64px;line-height:1.18;font-weight:400;color:var(--text);white-space:nowrap;
+  word-break:normal;overflow-wrap:anywhere;transition:color .18s;cursor:text;min-height:1.18em}
+.expr.wrap{white-space:normal}
+.expr.wrap .b::after,.result-mode .expr .b::after{content:"\200B"}
+.expr .op{color:var(--accent)}
+.expr .sep{color:var(--sep)}
+.expr .fn{color:var(--accent)}
+.caret{display:inline-block;width:0;height:1em;vertical-align:-0.12em;border-left:2px solid var(--accent);
+  margin:0 -1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.preview{font-size:36px;line-height:1.25;color:var(--muted);min-height:1.25em;margin-top:6px;
+  white-space:nowrap;overflow-wrap:anywhere;transition:color .18s}
+.preview.wrap{white-space:normal;word-break:break-all}
+.preview.err{color:var(--err);font-size:22px!important;white-space:normal}
+/* result mode: expression stays visible, answer becomes big */
+.result-mode .expr{color:var(--muted);white-space:normal}
+.result-mode .expr .op,.result-mode .expr .fn{color:var(--muted)}
+.result-mode .preview{color:var(--text);font-weight:400;cursor:pointer}
+.result-mode .caret{display:none}
+
+/* ---------- scientific row ---------- */
+.sci{display:grid;grid-template-columns:repeat(4,1fr) 48px;gap:6px 6px;margin:4px 0 10px;flex:none}
+.sci .k{height:42px;border-radius:21px;background:transparent;color:var(--sci-t);font-size:19px}
+.sci .k:active{background:var(--num);border-radius:12px}
+.sci .k.on{background:var(--sci-on)}
+.sci .extra{display:none}
+.sci.open .extra{display:block}
+.chev{grid-column:5;grid-row:1;height:42px;border:0;border-radius:21px;background:transparent;color:var(--sci-t);
+  display:grid;place-items:center;cursor:pointer}
+.sci.open .chev{grid-row:1 / span 3;height:auto}
+.chev svg{transition:transform .2s}
+.sci.open .chev svg{transform:rotate(180deg)}
+.chev:active{background:var(--num)}
+
+/* ---------- keypad ---------- */
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;grid-auto-rows:clamp(56px,10vh,90px);flex:none}
+.k{border:0;font-family:inherit;cursor:pointer;display:grid;place-items:center;padding:0;
+  border-radius:var(--r);transition:border-radius .16s ease, filter .16s, background-color .3s, color .3s;font-size:32px;font-weight:400}
+.k:active{border-radius:18px;filter:brightness(1.15)}
+.n{background:var(--num);color:var(--num-t)}
+.o{background:var(--op);color:var(--op-t);font-size:34px}
+.ac{background:var(--ac);color:var(--ac-t);font-size:26px;font-weight:500}
+.eq{background:var(--eq);color:var(--eq-t);font-size:36px}
+.o.small{font-size:26px}
+
+/* ---------- history ---------- */
+.hist{position:absolute;left:0;right:0;top:0;height:72%;background:var(--panel);
+  border-radius:0 0 28px 28px;transform:translateY(-102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);z-index:5;
+  box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.hist.open{transform:none}
+.hist header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 6px 20px;flex:none}
+.hist h2{font-size:18px;font-weight:500;margin:0}
+.hist .clear{border:0;background:transparent;color:var(--accent);font:500 15px Roboto,sans-serif;padding:10px;cursor:pointer}
+.hlist{flex:1;overflow-y:auto;padding:0 20px 8px;display:flex;flex-direction:column-reverse}
+.hitem{text-align:right;padding:12px 0;border-bottom:1px solid rgba(128,128,128,.18);cursor:pointer}
+.hitem .he{color:var(--muted);font-size:18px;word-break:break-all;line-height:1.35}
+.hitem .hr{color:var(--text);font-size:28px;margin-top:2px;word-break:break-all}
+.hempty{color:var(--muted);text-align:center;margin:auto;font-size:15px}
+.handle{width:36px;height:4px;border-radius:2px;background:var(--muted);opacity:.5;margin:8px auto 10px;flex:none}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .25s;z-index:4}
+.scrim.show{opacity:1;pointer-events:auto}
+
+.toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translate(-50%,20px);
+  background:var(--text);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;
+  transition:all .25s;pointer-events:none;z-index:10}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <button class="iconbtn" id="histBtn" aria-label="Lịch sử">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+    </button>
+    <div class="tr">
+      <span class="mode-tag" id="modeTag">DEG</span>
+      <button class="iconbtn" id="themeBtn" aria-label="Giao diện">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22C6.49 22 2 17.51 2 12S6.49 2 12 2s10 4.04 10 9c0 3.31-2.69 6-6 6h-1.77c-.28 0-.5.22-.5.5 0 .12.05.23.13.33.41.47.64 1.06.64 1.67A2.5 2.5 0 0 1 12 22zm0-18c-4.41 0-8 3.59-8 8s3.59 8 8 8c.28 0 .5-.22.5-.5a.54.54 0 0 0-.14-.35c-.41-.46-.63-1.05-.63-1.65a2.5 2.5 0 0 1 2.5-2.5H16c2.21 0 4-1.79 4-4 0-3.86-3.59-7-8-7z"/><circle cx="6.5" cy="11.5" r="1.5"/><circle cx="9.5" cy="7.5" r="1.5"/><circle cx="14.5" cy="7.5" r="1.5"/><circle cx="17.5" cy="11.5" r="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="display" id="display">
+    <div class="dinner" id="dinner">
+      <div class="expr" id="expr"></div>
+      <div class="preview" id="preview"></div>
+    </div>
+  </div>
+
+  <div class="sci" id="sci">
+    <button class="k" data-k="√" id="kSqrt">√</button>
+    <button class="k" data-k="π">π</button>
+    <button class="k" data-k="^">^</button>
+    <button class="k" data-k="!">!</button>
+    <button class="chev" id="chev" aria-label="Mở rộng">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+    </button>
+    <button class="k extra" data-k="DRG" id="kDrg">RAD</button>
+    <button class="k extra" data-k="sin" id="kSin">sin</button>
+    <button class="k extra" data-k="cos" id="kCos">cos</button>
+    <button class="k extra" data-k="tan" id="kTan">tan</button>
+    <button class="k extra" data-k="INV" id="kInv">INV</button>
+    <button class="k extra" data-k="e">e</button>
+    <button class="k extra" data-k="ln" id="kLn">ln</button>
+    <button class="k extra" data-k="log" id="kLog">log</button>
+  </div>
+
+  <div class="keys">
+    <button class="k ac" data-k="AC" id="kAC">AC</button>
+    <button class="k o small" data-k="()">( )</button>
+    <button class="k o" data-k="%">%</button>
+    <button class="k o" data-k="÷">÷</button>
+    <button class="k n" data-k="7">7</button>
+    <button class="k n" data-k="8">8</button>
+    <button class="k n" data-k="9">9</button>
+    <button class="k o" data-k="×">×</button>
+    <button class="k n" data-k="4">4</button>
+    <button class="k n" data-k="5">5</button>
+    <button class="k n" data-k="6">6</button>
+    <button class="k o" data-k="−">−</button>
+    <button class="k n" data-k="1">1</button>
+    <button class="k n" data-k="2">2</button>
+    <button class="k n" data-k="3">3</button>
+    <button class="k o" data-k="+">+</button>
+    <button class="k n" data-k="0">0</button>
+    <button class="k n" data-k=".">.</button>
+    <button class="k n" data-k="BS" aria-label="Xoá">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7.07L2.4 12l4.66-7H22v14zm-11.59-2L14 13.41 17.59 17 19 15.59 15.41 12 19 8.41 17.59 7 14 10.59 10.41 7 9 8.41 12.59 12 9 15.59z"/></svg>
+    </button>
+    <button class="k eq" data-k="=">=</button>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="hist" id="hist">
+    <header><h2>Lịch sử</h2><button class="clear" id="clearHist">Xoá lịch sử</button></header>
+    <div class="hlist" id="hlist"></div>
+    <div class="handle"></div>
+  </div>
+  <div class="sheet" id="sheet">
+    <div class="handle"></div>
+    <h3>Giao diện</h3>
+    <div class="seg" id="seg">
+      <button data-m="auto">Tự động</button>
+      <button data-m="light"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM2 13h2a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2zm18 0h2a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2zM11 2v2a1 1 0 0 0 2 0V2a1 1 0 0 0-2 0zm0 18v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-2 0zM5.99 4.58a1 1 0 0 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41-1.41L5.99 4.58zm12.37 12.37a1 1 0 0 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41-1.41l-1.06-1.06zm1.06-10.96a1 1 0 0 0-1.41-1.41l-1.06 1.06a1 1 0 0 0 1.41 1.41l1.06-1.06zM7.05 18.36a1 1 0 0 0-1.41-1.41l-1.06 1.06a1 1 0 0 0 1.41 1.41l1.06-1.06z"/></svg>Sáng</button>
+      <button data-m="dark"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>Tối</button>
+    </div>
+    <h3>Màu sắc</h3>
+    <div class="sw" id="sw"></div>
+    <div class="swname" id="swname"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ================= native bridge (iOS app) ================= */
+const native = (name, body) => { try{ const h=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers[name]; if(h){ h.postMessage(body); return true; } }catch(e){} return false; };
+/* ================= storage (optional) ================= */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ================= state ================= */
+let toks = store.get('calc.toks', []);
+let cur = toks.length;
+let resultMode = false;
+let lastValue = null;
+let deg = store.get('calc.deg', true);
+let inv = false;
+let history = store.get('calc.hist', []);
+let errMsg = '';
+
+const OPS = ['+','−','×','÷','^'];
+const isD = t => t!=null && /^[0-9.]$/.test(t);
+const isFn = t => t!=null && t.length>1 && t.endsWith('(');
+const endsVal = t => t!=null && (isD(t) || t===')' || t==='%' || t==='!' || t==='π' || t==='e');
+
+/* ================= evaluator ================= */
+function lex(ts){
+  const out=[]; let i=0;
+  while(i<ts.length){
+    const t=ts[i];
+    if(isD(t)){
+      let run=''; while(i<ts.length && isD(ts[i])) run+=ts[i++];
+      if(run==='.' || (run.match(/\./g)||[]).length>1) throw new Error('syntax');
+      out.push({t:'num',v:parseFloat(run)}); continue;
+    }
+    if(isFn(t)) out.push({t:'fn',v:t.slice(0,-1)});
+    else if(OPS.includes(t)) out.push({t:'op',v:t});
+    else if(t==='(') out.push({t:'lp'});
+    else if(t===')') out.push({t:'rp'});
+    else if(t==='%'||t==='!') out.push({t:'post',v:t});
+    else if(t==='π'||t==='e') out.push({t:'const',v:t});
+    else if(t==='√') out.push({t:'sqrt'});
+    else throw new Error('syntax');
+    i++;
+  }
+  return out;
+}
+function parse(L){
+  let p=0;
+  const peek=()=>L[p], next=()=>L[p++];
+  const isOp=(v)=>L[p] && L[p].t==='op' && L[p].v===v;
+  const implicitStart=()=>{ const k=L[p]; return k && (k.t==='num'||k.t==='const'||k.t==='fn'||k.t==='lp'||k.t==='sqrt'); };
+  function closeParen(){
+    if(peek() && peek().t==='rp'){ next(); return; }
+    if(p>=L.length) return;            // auto-close at end
+    throw new Error('syntax');
+  }
+  function expr(){
+    const first=term(); let v=first.v, any=false;
+    while(isOp('+')||isOp('−')){
+      const op=next().v; const R=term(); any=true;
+      const rv = R.pct ? v*R.v : R.v;  // 200 + 10% = 220
+      v = op==='+' ? v+rv : v-rv;
+    }
+    return any ? {v,pct:false} : first;
+  }
+  function term(){
+    const first=unary(); let v=first.v, single=true;
+    for(;;){
+      if(isOp('×')||isOp('÷')){
+        const op=next().v; const R=unary(); single=false;
+        if(op==='×') v*=R.v; else { if(R.v===0) throw new Error('div0'); v/=R.v; }
+      } else if(implicitStart()){
+        const R=unary(); v*=R.v; single=false;
+      } else break;
+    }
+    return {v, pct: single && first.pct};
+  }
+  function unary(){
+    if(isOp('−')){ next(); const r=unary(); return {v:-r.v,pct:r.pct}; }
+    if(isOp('+')){ next(); return unary(); }
+    return power();
+  }
+  function power(){
+    const b=postfix();
+    if(isOp('^')){ next(); const e=unary(); return {v:Math.pow(b.v,e.v),pct:false}; }
+    return b;
+  }
+  function postfix(){
+    let v=primary(), pct=false;
+    while(peek() && peek().t==='post'){
+      const k=next().v;
+      if(k==='%'){ v/=100; pct=true; } else { v=fact(v); pct=false; }
+    }
+    return {v,pct};
+  }
+  function primary(){
+    const k=next();
+    if(!k) throw new Error('incomplete');
+    if(k.t==='num') return k.v;
+    if(k.t==='const') return k.v==='π' ? Math.PI : Math.E;
+    if(k.t==='lp'){ const r=expr(); closeParen(); return r.v; }
+    if(k.t==='fn'){ const a=expr().v; closeParen(); return applyFn(k.v,a); }
+    if(k.t==='sqrt'){ const a=postfix().v; if(a<0) throw new Error('domain'); return Math.sqrt(a); }
+    throw new Error('syntax');
+  }
+  const r=expr();
+  if(p<L.length) throw new Error('syntax');
+  return r.v;
+}
+function fact(v){
+  if(v<0 || !Number.isInteger(v)) throw new Error('domain');
+  if(v>170) throw new Error('overflow');
+  let r=1; for(let i=2;i<=v;i++) r*=i; return r;
+}
+function clean(x){ return Math.abs(x)<1e-14 ? 0 : x; }
+function applyFn(f,x){
+  const toR = a => deg ? a*Math.PI/180 : a;
+  const fromR = a => deg ? a*180/Math.PI : a;
+  switch(f){
+    case 'sin': return clean(Math.sin(toR(x)));
+    case 'cos': return clean(Math.cos(toR(x)));
+    case 'tan': {
+      if(deg && Math.abs(((x%180)+180)%180-90)<1e-12) throw new Error('domain');
+      return clean(Math.tan(toR(x)));
+    }
+    case 'asin': if(x<-1||x>1) throw new Error('domain'); return fromR(Math.asin(x));
+    case 'acos': if(x<-1||x>1) throw new Error('domain'); return fromR(Math.acos(x));
+    case 'atan': return fromR(Math.atan(x));
+    case 'ln': if(x<=0) throw new Error('domain'); return Math.log(x);
+    case 'log': if(x<=0) throw new Error('domain'); return Math.log10(x);
+  }
+  throw new Error('syntax');
+}
+function evaluate(ts){
+  if(!ts.length) return null;
+  const v=parse(lex(ts));
+  if(!isFinite(v) || isNaN(v)) throw new Error('overflow');
+  return v;
+}
+const ERR = {div0:'Không thể chia cho 0', domain:'Giá trị không hợp lệ', overflow:'Số quá lớn', syntax:'Lỗi cú pháp', incomplete:'Biểu thức chưa hoàn chỉnh'};
+
+/* ================= formatting ================= */
+function fmt(v){
+  if(Object.is(v,-0)) v=0;
+  const a=Math.abs(v);
+  if(a!==0 && (a>=1e15 || a<1e-6)){
+    let [m,e]=v.toExponential(10).split('e');
+    m=m.replace(/\.?0+$/,'');
+    return m.replace('-','−')+'E'+parseInt(e,10);
+  }
+  let s=String(parseFloat(v.toPrecision(12)));
+  const neg=s[0]==='-'; if(neg) s=s.slice(1);
+  let [ip,dp]=s.split('.');
+  ip=ip.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (neg?'−':'')+ip+(dp?'.'+dp:'');
+}
+function plain(v){ return fmt(v).replace(/,/g,'').replace(/−/g,'-'); }
+function valueToToks(v){
+  let s=String(parseFloat(v.toPrecision(12)));
+  const out=[];
+  let [m,e]=s.split('e');
+  for(const ch of m) out.push(ch==='-'?'−':ch);
+  if(e!==undefined){
+    out.push('×','1','0','^');
+    for(const ch of String(parseInt(e,10))) out.push(ch==='-'?'−':ch);
+  }
+  return out;
+}
+const FN_LABEL={'sin(':'sin(','cos(':'cos(','tan(':'tan(','asin(':'sin⁻¹(','acos(':'cos⁻¹(','atan(':'tan⁻¹(','ln(':'ln(','log(':'log('};
+function exprText(ts){ // plain text version for history
+  return ts.map(t=>FN_LABEL[t]||t).join('').replace(/(\d+)(\.\d*)?/g,(m,a,b)=>a.replace(/\B(?=(\d{3})+(?!\d))/g,',')+(b||''));
+}
+
+/* ================= rendering ================= */
+const $=id=>document.getElementById(id);
+const exprEl=$('expr'), prevEl=$('preview'), displayEl=$('display'), app=$('app');
+
+function renderExpr(){
+  const sepBefore=new Set();
+  for(let i=0;i<toks.length;){
+    if(!isD(toks[i])){ i++; continue; }
+    let j=i; while(j<toks.length && isD(toks[j])) j++;
+    let dot=-1; for(let k=i;k<j;k++) if(toks[k]==='.'){dot=k;break;}
+    const intEnd = dot<0 ? j : dot, n=intEnd-i;
+    for(let k=i+1;k<intEnd;k++) if((intEnd-k)%3===0) sepBefore.add(k);
+    i=j;
+  }
+  let h='';
+  for(let i=0;i<=toks.length;i++){
+    if(i===cur) h+='<span class="caret"></span>';
+    if(i===toks.length) break;
+    const t=toks[i];
+    if(sepBefore.has(i)) h+='<span class="sep">,</span>';
+    let cls='', txt=t;
+    if(OPS.includes(t)||t==='%'||t==='!') cls='op';
+    else if(isFn(t)){ cls='fn'; txt=FN_LABEL[t]||t; }
+    else if(t==='√') cls='fn';
+    if(cls==='op' && t!=='%' && t!=='!') h+='<span class="b"></span>';
+    h+=`<span data-i="${i}"${cls?` class="${cls}"`:''}>${txt}</span>`;
+  }
+  exprEl.innerHTML=h;
+}
+function contentW(el){ const r=document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; }
+function fitEl(el, max, min, wrapAllowed){
+  el.classList.remove('wrap');
+  const ws=el.style.whiteSpace; el.style.whiteSpace='nowrap';
+  const avail=el.clientWidth;
+  let s=max; el.style.fontSize=s+'px';
+  const w0=contentW(el);
+  if(w0>avail){ s=Math.max(min, Math.floor(max*avail/w0)); el.style.fontSize=s+'px';
+    while(s>min && contentW(el)>avail){ s-=1; el.style.fontSize=s+'px'; } }
+  const over=contentW(el)>avail+0.5;
+  el.style.whiteSpace=ws;
+  if(over && wrapAllowed) el.classList.add('wrap');
+}
+function render(){
+  renderExpr();
+  app.classList.toggle('result-mode', resultMode);
+  prevEl.classList.remove('err');
+  const W = displayEl.clientWidth;
+  const big = W<360 ? 56 : 64;
+  if(resultMode){
+    prevEl.textContent = '= ' + fmt(lastValue);
+    fitEl(exprEl, 34, 22, true); exprEl.classList.add('wrap');
+    fitEl(prevEl, big, 32, true);
+  } else {
+    let p='';
+    if(errMsg){ p=errMsg; prevEl.classList.add('err'); }
+    else if(needsPreview()){
+      try{ const v=evaluate(toks); if(v!==null) p=fmt(v); }catch(e){ p=''; }
+    }
+    prevEl.textContent=p;
+    fitEl(exprEl, big, 34, true);
+    if(!errMsg) fitEl(prevEl, 36, 22, true);
+  }
+  updateSciLabels();
+  $('kAC').textContent = 'AC';
+  store.set('calc.toks', toks);
+  requestAnimationFrame(()=>{
+    const c=exprEl.querySelector('.caret');
+    if(resultMode || !c || cur===toks.length) displayEl.scrollTop=displayEl.scrollHeight;
+    else c.scrollIntoView({block:'nearest'});
+  });
+}
+function needsPreview(){
+  return toks.some(t=>!isD(t)) && !(toks.length===1);
+}
+
+/* ================= input logic ================= */
+function insert(arr){ toks.splice(cur,0,...arr); cur+=arr.length; }
+function startFromResult(){ toks=valueToToks(lastValue); cur=toks.length; resultMode=false; }
+function startFresh(){ toks=[]; cur=0; resultMode=false; }
+function numberAt(){ // returns current digit run around cursor
+  let a=cur, b=cur;
+  while(a>0 && isD(toks[a-1])) a--;
+  while(b<toks.length && isD(toks[b])) b++;
+  return toks.slice(a,b);
+}
+function press(k){
+  errMsg='';
+  if(/^[0-9]$/.test(k)){
+    if(resultMode) startFresh();
+    // avoid leading "00"
+    const run=numberAt();
+    if(run.length===1 && run[0]==='0' && toks[cur-1]==='0' && !isD(toks[cur])){ toks[cur-1]=k; }
+    else insert([k]);
+  }
+  else if(k==='.'){
+    if(resultMode) startFresh();
+    if(numberAt().includes('.')) return feedback();
+    if(!isD(toks[cur-1])) insert(['0','.']); else insert(['.']);
+  }
+  else if(OPS.includes(k)){
+    if(resultMode) startFromResult();
+    const prev=toks[cur-1];
+    if(cur===0 || prev==='(' || isFn(prev) || prev==='√'){
+      if(k==='−') insert(['−']); else return feedback();
+    } else if(OPS.includes(prev)){
+      if(k==='−' && prev!=='−' && prev!=='+') insert(['−']);
+      else {
+        // replace operator (also drop a dangling unary minus after × ÷ ^)
+        let i=cur-1;
+        if(prev==='−' && OPS.includes(toks[i-1])){ toks.splice(i,1); cur--; i--; }
+        if(i===0 && k!=='−'){ return feedback(); }
+        toks[i]=k;
+      }
+    } else insert([k]);
+  }
+  else if(k==='%'||k==='!'){
+    if(resultMode) startFromResult();
+    if(endsVal(toks[cur-1])) insert([k]); else return feedback();
+  }
+  else if(k==='()'){
+    if(resultMode) startFromResult();
+    const before=toks.slice(0,cur);
+    let open=0; for(const t of before){ if(t==='('||isFn(t)) open++; else if(t===')') open--; }
+    if(open>0 && endsVal(toks[cur-1])) insert([')']);
+    else insert(['(']);
+  }
+  else if(k==='π'||k==='e'){
+    if(resultMode) startFresh();
+    insert([k]);
+  }
+  else if(k==='√'){
+    if(inv){ // x²
+      if(resultMode) startFromResult();
+      if(endsVal(toks[cur-1])) insert(['^','2']); else return feedback();
+      setInv(false);
+    } else { if(resultMode) startFresh(); insert(['√']); }
+  }
+  else if(k==='sin'||k==='cos'||k==='tan'){
+    if(resultMode) startFresh();
+    insert([(inv?'a':'')+k+'(']); setInv(false);
+  }
+  else if(k==='ln'){
+    if(resultMode) startFresh();
+    if(inv){ insert(['e','^']); setInv(false); } else insert(['ln(']);
+  }
+  else if(k==='log'){
+    if(resultMode) startFresh();
+    if(inv){ insert(['1','0','^']); setInv(false); } else insert(['log(']);
+  }
+  else if(k==='INV'){ setInv(!inv); return; }
+  else if(k==='DRG'){ deg=!deg; store.set('calc.deg',deg); }
+  else if(k==='AC'){ startFresh(); }
+  else if(k==='BS'){
+    if(resultMode){ resultMode=false; cur=toks.length; }   // back to editing the same expression
+    else if(cur>0){ toks.splice(cur-1,1); cur--; }
+  }
+  else if(k==='='){
+    if(resultMode || !toks.length) return;
+    try{
+      const v=evaluate(toks);
+      if(v===null) return;
+      if(!needsPreview()){ return; }
+      // auto-close open parentheses for display
+      let open=0; for(const t of toks){ if(t==='('||isFn(t)) open++; else if(t===')') open--; }
+      for(;open>0;open--) toks.push(')');
+      cur=toks.length;
+      lastValue=v; resultMode=true;
+      addHistory(exprText(toks), fmt(v), v, toks.slice());
+    }catch(e){
+      errMsg = ERR[e.message] || 'Lỗi';
+    }
+  }
+  render();
+}
+function feedback(){ exprEl.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:180}); }
+function setInv(on){ inv=on; updateSciLabels(); }
+function updateSciLabels(){
+  $('kInv').classList.toggle('on', inv);
+  $('kSin').textContent = inv?'sin⁻¹':'sin';
+  $('kCos').textContent = inv?'cos⁻¹':'cos';
+  $('kTan').textContent = inv?'tan⁻¹':'tan';
+  $('kLn').textContent  = inv?'eˣ':'ln';
+  $('kLog').textContent = inv?'10ˣ':'log';
+  $('kSqrt').textContent= inv?'x²':'√';
+  $('kDrg').textContent = deg?'RAD':'DEG';   // button shows what you switch to (like Android)
+  $('modeTag').textContent = deg?'DEG':'RAD';
+}
+
+/* ================= history ================= */
+function addHistory(e, r, v, ts){
+  history.push({e, r, v, ts});
+  if(history.length>200) history.shift();
+  store.set('calc.hist', history);
+  renderHist();
+}
+function renderHist(){
+  const l=$('hlist');
+  if(!history.length){ l.innerHTML='<div class="hempty">Chưa có phép tính nào</div>'; return; }
+  l.innerHTML = history.map((h,i)=>`<div class="hitem" data-h="${i}"><div class="he">${h.e}</div><div class="hr">= ${h.r}</div></div>`).reverse().join('');
+}
+function openHist(o){ $('hist').classList.toggle('open',o); $('scrim').classList.toggle('show',o); if(o){ const l=$('hlist'); l.scrollTop=l.scrollHeight; } }
+$('hlist').addEventListener('click', ev=>{
+  const it=ev.target.closest('.hitem'); if(!it) return;
+  const h=history[+it.dataset.h];
+  if(ev.target.closest('.he')){ // tap expression → load that expression to edit
+    toks=h.ts.slice(); cur=toks.length; resultMode=false;
+  } else {                       // tap result → insert result at cursor
+    if(resultMode) startFresh();
+    const vt=valueToToks(h.v);
+    if(endsVal(toks[cur-1])) insert(['×']);
+    insert(vt[0]==='−' && cur>0 ? ['(',...vt,')'] : vt);
+  }
+  errMsg=''; openHist(false); render();
+});
+$('clearHist').onclick=()=>{ history=[]; store.set('calc.hist',history); renderHist(); };
+$('histBtn').onclick=()=>openHist(!$('hist').classList.contains('open'));
+$('scrim').onclick=()=>{ openHist(false); openSheet(false); };
+
+// swipe down on display opens history, swipe up on panel closes
+(function(){
+  let y0=null, onPanel=false;
+  app.addEventListener('touchstart',e=>{ y0=e.touches[0].clientY; onPanel=!!e.target.closest('.hist'); },{passive:true});
+  app.addEventListener('touchend',e=>{
+    if(y0==null) return; const dy=e.changedTouches[0].clientY-y0; y0=null;
+    const open=$('hist').classList.contains('open');
+    if(!open && dy>70 && displayEl.scrollTop<=0 && e.target.closest('.display,.topbar')) openHist(true);
+    else if(open && onPanel && dy<-60) openHist(false);
+  },{passive:true});
+})();
+
+/* ================= events ================= */
+document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{ native('tap', b.dataset.k==='='?'eq':'key'); press(b.dataset.k); }));
+$('chev').onclick=()=>{ $('sci').classList.toggle('open'); store.set('calc.sci',$('sci').classList.contains('open')); render(); };
+if(store.get('calc.sci',false)) $('sci').classList.add('open');
+
+// tap inside expression to move the cursor
+exprEl.addEventListener('click', ev=>{
+  if(resultMode){ resultMode=false; }
+  const s=ev.target.closest('[data-i]');
+  if(s){ const r=s.getBoundingClientRect(); cur=+s.dataset.i + (ev.clientX>r.left+r.width/2?1:0); }
+  else cur=toks.length;
+  render();
+});
+displayEl.addEventListener('click', ev=>{ if(ev.target===displayEl || ev.target.id==='dinner'){ if(!resultMode){cur=toks.length; render();} } });
+
+// tap result to copy
+prevEl.addEventListener('click', async ()=>{
+  if(!resultMode) return;
+  if(native('copy', plain(lastValue))){ toast('Đã sao chép kết quả'); return; }
+  try{ await navigator.clipboard.writeText(plain(lastValue)); toast('Đã sao chép kết quả'); }
+  catch(e){ toast('Không sao chép được'); }
+});
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1400); }
+
+// physical keyboard
+document.addEventListener('keydown', e=>{
+  const map={'*':'×','x':'×','/':'÷','-':'−','+':'+','^':'^','%':'%','!':'!','.':'.',',':'.','Enter':'=','=':'=','Backspace':'BS','Escape':'AC','Delete':'AC','p':'π','s':'sin','c':'cos','t':'tan','l':'ln','r':'√'};
+  let k = /^[0-9]$/.test(e.key) ? e.key : map[e.key];
+  if(e.key==='('||e.key===')'){ e.preventDefault(); if(resultMode) startFromResult(); insert([e.key]); errMsg=''; render(); return; }
+  if(e.key==='ArrowLeft'){ if(!resultMode && cur>0){cur--;render();} return; }
+  if(e.key==='ArrowRight'){ if(!resultMode && cur<toks.length){cur++;render();} return; }
+  if(k){ e.preventDefault(); press(k); }
+});
+window.addEventListener('resize', render);
+
+/* ================= themes ================= */
+const BASE = {
+  dark:{text:'#e6e1e6',muted:'#948f99',sep:'#5f5b66',sciT:'#cac4d0',err:'#f2b8b5'},
+  light:{text:'#1c1b1f',muted:'#77737c',sep:'#c4bfca',sciT:'#47454e',err:'#b3261e'}
+};
+const PAL = {
+  purple:{name:'Tím',
+    dark:{bg:'#141218',num:'#2b2930',op:'#4a4458',opT:'#e8def8',ac:'#633b48',acT:'#ffd8e4',eq:'#d0bcff',eqT:'#381e72',accent:'#d0bcff',panel:'#211f26'},
+    light:{bg:'#fef7ff',num:'#ece6f0',op:'#e8def8',opT:'#1d192b',ac:'#ffd8e4',acT:'#31111d',eq:'#6750a4',eqT:'#ffffff',accent:'#6750a4',panel:'#f3edf7'}},
+  blue:{name:'Xanh dương',
+    dark:{bg:'#111418',num:'#262a30',op:'#38485c',opT:'#d4e4fb',ac:'#523f5f',acT:'#f2daff',eq:'#9ecaff',eqT:'#003258',accent:'#9ecaff',panel:'#1d2024'},
+    light:{bg:'#f8f9ff',num:'#e6e8ef',op:'#d4e3f8',opT:'#0f1c2b',ac:'#f2daff',acT:'#251431',eq:'#1f6aa8',eqT:'#ffffff',accent:'#1f6aa8',panel:'#edeef5'}},
+  green:{name:'Xanh lá',
+    dark:{bg:'#10140f',num:'#262b24',op:'#3a4b36',opT:'#d6e8c9',ac:'#1f4e4f',acT:'#bcebec',eq:'#9cd67d',eqT:'#0c3900',accent:'#9cd67d',panel:'#1c211a'},
+    light:{bg:'#f7faf0',num:'#e5e9dd',op:'#d6e8c9',opT:'#122010',ac:'#bcebec',acT:'#002021',eq:'#3b6d23',eqT:'#ffffff',accent:'#3b6d23',panel:'#ecefe4'}},
+  peach:{name:'Cam đào',
+    dark:{bg:'#19120f',num:'#302824',op:'#5c4034',opT:'#ffdbcf',ac:'#55491d',acT:'#f6e39c',eq:'#ffb59a',eqT:'#5b1a00',accent:'#ffb59a',panel:'#261d1a'},
+    light:{bg:'#fff8f5',num:'#f6e5df',op:'#ffdbcf',opT:'#2c160e',ac:'#f6e39c',acT:'#221b00',eq:'#a3471f',eqT:'#ffffff',accent:'#a3471f',panel:'#fcebe5'}},
+  pink:{name:'Hồng',
+    dark:{bg:'#191113',num:'#31282b',op:'#5b3f49',opT:'#ffd9e3',ac:'#5f4123',acT:'#ffdcc0',eq:'#ffb0cb',eqT:'#5e1134',accent:'#ffb0cb',panel:'#261d20'},
+    light:{bg:'#fff8f8',num:'#f6e4e8',op:'#ffd9e3',opT:'#2b151d',ac:'#ffdcc0',acT:'#2d1600',eq:'#984063',eqT:'#ffffff',accent:'#984063',panel:'#faebef'}}
+};
+let themeMode = store.get('calc.mode','auto');
+let themeColor = store.get('calc.color','purple'); if(!PAL[themeColor]) themeColor='purple';
+const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
+const resolved = () => themeMode==='auto' ? (mq && mq.matches ? 'light' : 'dark') : themeMode;
+function applyTheme(){
+  const m=resolved(), c=PAL[themeColor][m], b=BASE[m], r=document.documentElement.style;
+  const set=(k,v)=>r.setProperty(k,v);
+  set('--bg',c.bg); set('--text',b.text); set('--muted',b.muted); set('--sep',b.sep);
+  set('--num',c.num); set('--num-t',b.text); set('--op',c.op); set('--op-t',c.opT);
+  set('--ac',c.ac); set('--ac-t',c.acT); set('--eq',c.eq); set('--eq-t',c.eqT);
+  set('--sci-t',b.sciT); set('--sci-on',c.op); set('--panel',c.panel); set('--accent',c.accent); set('--err',b.err);
+  set('color-scheme',m);
+  native('theme', {mode:m, bg:c.bg});
+  const meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute('content',c.bg);
+  document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x.dataset.m===themeMode));
+  $('sw').innerHTML=Object.entries(PAL).map(([k,p])=>{
+    const d=p[m];
+    return `<button class="swatch${k===themeColor?' on':''}" data-c="${k}" aria-label="${p.name}" style="background:${d.op}">
+      <span class="half" style="background:${d.eq}"></span><span class="q" style="background:${d.ac}"></span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="${d.eqT}"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></button>`;
+  }).join('');
+  $('swname').innerHTML=Object.values(PAL).map(p=>`<span>${p.name}</span>`).join('');
+}
+function openSheet(o){ $('sheet').classList.toggle('open',o); $('scrim').classList.toggle('show',o); }
+$('themeBtn').onclick=()=>openSheet(true);
+$('seg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; themeMode=b.dataset.m; store.set('calc.mode',themeMode); applyTheme(); });
+$('sw').addEventListener('click',e=>{ const b=e.target.closest('.swatch'); if(!b) return; themeColor=b.dataset.c; store.set('calc.color',themeColor); applyTheme(); });
+if(mq){ const f=()=>{ if(themeMode==='auto') applyTheme(); }; mq.addEventListener ? mq.addEventListener('change',f) : mq.addListener(f); }
+applyTheme();
+
+renderHist();
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+render();
+})();
+</script>
+</body>
+</html>
