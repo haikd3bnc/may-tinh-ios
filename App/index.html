@@ -33,8 +33,31 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);transition
 .mode-tag{font-size:13px;color:var(--muted);letter-spacing:.06em;padding:0 6px}
 .tr{display:flex;align-items:center;gap:2px}
 
+/* ---------- wallpaper ---------- */
+.wall{position:fixed;inset:0;background-size:cover;background-position:center;display:none;z-index:0}
+.wall::after{content:"";position:absolute;inset:0;background:var(--bg);opacity:var(--dim,.35);transition:background-color .3s}
+body.has-wall .wall{display:block}
+.app{z-index:1}
+body.has-wall .n{background:color-mix(in srgb,var(--num) 62%,transparent)}
+body.has-wall .o{background:color-mix(in srgb,var(--op) 72%,transparent)}
+body.has-wall .ac{background:color-mix(in srgb,var(--ac) 80%,transparent)}
+body.has-wall .keys .k,body.has-wall .sci .k.on{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+body.has-wall .expr,body.has-wall .preview,body.has-wall .sci .k,body.has-wall .mode-tag{text-shadow:0 1px 10px var(--bg),0 0 2px color-mix(in srgb,var(--bg) 60%,transparent)}
+body.has-wall .preview{color:color-mix(in srgb,var(--text) 72%,transparent)}
+.walls{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;scrollbar-width:none}
+.walls::-webkit-scrollbar{display:none}
+.wt{flex:none;width:58px;height:96px;border-radius:14px;border:1px solid var(--sep);background:var(--num) center/cover;
+  cursor:pointer;padding:0;display:grid;place-items:center;color:var(--muted);font:500 12px Roboto,system-ui,sans-serif;position:relative}
+.wt.on{outline:2px solid var(--accent);outline-offset:3px;border-color:transparent}
+.wt svg{opacity:.9}
+.wlab{display:flex;gap:10px;padding:0 2px}
+.wlab span{flex:none;width:58px;text-align:center;font-size:11px;color:var(--muted)}
+.dimrow{display:flex;align-items:center;gap:12px;margin-top:12px;color:var(--text);font-size:14px}
+.dimrow input{flex:1;accent-color:var(--accent)}
+.dimrow.off{opacity:.4;pointer-events:none}
+
 /* ---------- theme sheet ---------- */
-.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-radius:28px 28px 0 0;
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;overflow-y:auto;background:var(--panel);border-radius:28px 28px 0 0;
   padding:8px 20px calc(env(safe-area-inset-bottom) + 24px);transform:translateY(105%);
   transition:transform .28s cubic-bezier(.2,.8,.2,1), background-color .3s;z-index:6;box-shadow:0 -8px 24px rgba(0,0,0,.25)}
 .sheet.open{transform:none}
@@ -131,6 +154,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);transition
 </style>
 </head>
 <body>
+<div class="wall" id="wall"></div>
 <div class="app" id="app">
   <div class="topbar">
     <button class="iconbtn" id="histBtn" aria-label="Lịch sử">
@@ -211,6 +235,11 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);transition
     <h3>Màu sắc</h3>
     <div class="sw" id="sw"></div>
     <div class="swname" id="swname"></div>
+    <h3>Hình nền</h3>
+    <div class="walls" id="walls"></div>
+    <div class="wlab" id="wlab"></div>
+    <input type="file" id="wallFile" accept="image/*" hidden>
+    <label class="dimrow" id="dimRow">Độ tối <input type="range" id="dim" min="0" max="85" step="1"></label>
   </div>
   <div class="toast" id="toast"></div>
 </div>
@@ -706,6 +735,79 @@ $('seg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b
 $('sw').addEventListener('click',e=>{ const b=e.target.closest('.swatch'); if(!b) return; themeColor=b.dataset.c; store.set('calc.color',themeColor); applyTheme(); });
 if(mq){ const f=()=>{ if(themeMode==='auto') applyTheme(); }; mq.addEventListener ? mq.addEventListener('change',f) : mq.addListener(f); }
 applyTheme();
+
+/* ================= wallpaper ================= */
+function rng(seed){ return ()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }; }
+function stars(r,n,h,maxR){ let o=''; for(let i=0;i<n;i++) o+=`<circle cx="${(r()*400).toFixed(1)}" cy="${(r()*h).toFixed(1)}" r="${(r()*maxR+.3).toFixed(2)}" fill="#fff" opacity="${(r()*.7+.3).toFixed(2)}"/>`; return o; }
+const svgUrl = svg => `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+const SVG_HEAD='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice">';
+const BUILTIN = {
+  sunset:{name:'Hoàng hôn', svg:(()=>{
+    let stripes=''; for(let i=0;i<6;i++) stripes+=`<rect x="80" y="${560+i*16}" width="240" height="${3+i*1.6}" fill="#e2457a"/>`;
+    return SVG_HEAD+`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b0a3a"/><stop offset=".45" stop-color="#7a1f6e"/><stop offset=".7" stop-color="#e2457a"/><stop offset="1" stop-color="#ff9a52"/></linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#ff7a59"/></linearGradient></defs>
+    <rect width="400" height="860" fill="url(#g)"/>${stars(rng(7),60,380,1.1)}<circle cx="200" cy="560" r="120" fill="url(#s)"/>${stripes}
+    <polygon points="0,700 70,620 130,670 210,590 290,660 350,615 400,650 400,860 0,860" fill="#2a0f3f"/>
+    <polygon points="0,760 90,700 170,745 260,690 330,735 400,710 400,860 0,860" fill="#150726"/></svg>`; })()},
+  city:{name:'Phố đêm', svg:(()=>{
+    const r=rng(42); let b='', w='';
+    let x=-10; while(x<410){ const bw=30+r()*45, bh=180+r()*320, y=860-bh; b+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="#0a0f24"/>`;
+      for(let wy=y+12; wy<850; wy+=18) for(let wx=x+6; wx<x+bw-8; wx+=11) if(r()<.28) w+=`<rect x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="5" height="8" fill="${r()<.7?'#ffd479':'#8fd3ff'}" opacity="${(r()*.5+.5).toFixed(2)}"/>`;
+      x+=bw+2; }
+    return SVG_HEAD+`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070b1f"/><stop offset=".6" stop-color="#1d2a63"/><stop offset="1" stop-color="#5a3d7a"/></linearGradient>
+    <radialGradient id="m"><stop offset=".6" stop-color="#fff7da"/><stop offset="1" stop-color="#fff7da" stop-opacity="0"/></radialGradient></defs>
+    <rect width="400" height="860" fill="url(#g)"/>${stars(rng(3),110,520,1.2)}<circle cx="300" cy="150" r="60" fill="url(#m)" opacity=".9"/><circle cx="300" cy="150" r="38" fill="#fff7da"/>${b}${w}</svg>`; })()},
+  galaxy:{name:'Thiên hà', svg:(()=>{
+    return SVG_HEAD+`<defs><filter id="f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="40"/></filter></defs>
+    <rect width="400" height="860" fill="#05030f"/>
+    <g filter="url(#f)" opacity=".85"><ellipse cx="120" cy="260" rx="170" ry="110" fill="#5b2a9e"/><ellipse cx="300" cy="420" rx="160" ry="130" fill="#0f6e8c"/><ellipse cx="170" cy="600" rx="190" ry="100" fill="#a3317a"/><ellipse cx="280" cy="180" rx="90" ry="70" fill="#2846b8"/></g>
+    ${stars(rng(11),260,860,1.3)}${stars(rng(19),18,860,2.2)}</svg>`; })()},
+};
+let wallSel = store.get('calc.wall','none');
+let wallDim = store.get('calc.dim',40);
+let customImg = store.get('calc.wallImg',null);
+function wallCss(k){ return k==='custom' ? (customImg?`url("${customImg}")`:'') : (BUILTIN[k]?svgUrl(BUILTIN[k].svg):''); }
+function applyWall(){
+  if(wallSel==='custom' && !customImg) wallSel='none';
+  const on = wallSel!=='none';
+  document.body.classList.toggle('has-wall', on);
+  $('wall').style.backgroundImage = on ? wallCss(wallSel) : '';
+  $('wall').style.setProperty('--dim', (wallDim/100).toFixed(2));
+  $('dim').value=wallDim; $('dimRow').classList.toggle('off', !on);
+  const items=[['none','Không'],...Object.entries(BUILTIN).map(([k,v])=>[k,v.name])];
+  if(customImg) items.push(['custom','Ảnh của bạn']);
+  items.push(['add','Chọn ảnh']);
+  $('walls').innerHTML=items.map(([k])=>{
+    if(k==='none') return `<button class="wt${wallSel==='none'?' on':''}" data-w="none"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM4 12a8 8 0 0 1 12.9-6.32L5.68 16.9A7.95 7.95 0 0 1 4 12zm8 8a7.95 7.95 0 0 1-4.9-1.68L18.32 7.1A8 8 0 0 1 12 20z"/></svg></button>`;
+    if(k==='add') return `<button class="wt" data-w="add"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>`;
+    return `<button class="wt${wallSel===k?' on':''}" data-w="${k}" style='background-image:${wallCss(k)}'></button>`;
+  }).join('');
+  $('wlab').innerHTML=items.map(([,n])=>`<span>${n}</span>`).join('');
+}
+$('walls').addEventListener('click',e=>{
+  const b=e.target.closest('.wt'); if(!b) return;
+  if(b.dataset.w==='add'){ $('wallFile').click(); return; }
+  wallSel=b.dataset.w; store.set('calc.wall',wallSel); applyWall();
+});
+$('dim').addEventListener('input',e=>{ wallDim=+e.target.value; $('wall').style.setProperty('--dim',(wallDim/100).toFixed(2)); });
+$('dim').addEventListener('change',()=>store.set('calc.dim',wallDim));
+$('wallFile').addEventListener('change',e=>{
+  const f=e.target.files && e.target.files[0]; e.target.value=''; if(!f) return;
+  const url=URL.createObjectURL(f), img=new Image();
+  img.onload=()=>{
+    const max=1600, sc=Math.min(1, max/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas'); c.width=Math.round(img.naturalWidth*sc); c.height=Math.round(img.naturalHeight*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+    let data=c.toDataURL('image/jpeg',.85);
+    customImg=data; wallSel='custom';
+    try{ localStorage.setItem('calc.wallImg', JSON.stringify(data)); }
+    catch(err){ try{ data=c.toDataURL('image/jpeg',.6); customImg=data; localStorage.setItem('calc.wallImg', JSON.stringify(data)); }catch(e2){ toast('Ảnh lớn quá, chỉ dùng được lần này'); } }
+    store.set('calc.wall',wallSel); applyWall();
+  };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast('Không mở được ảnh này'); };
+  img.src=url;
+});
+applyWall();
 
 renderHist();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);

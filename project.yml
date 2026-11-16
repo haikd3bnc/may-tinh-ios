@@ -33,3 +33,5 @@ targets:
         UILaunchScreen:
           UIColorName: LaunchBG
         ITSAppUsesNonExemptEncryption: false
+        NSPhotoLibraryUsageDescription: Chọn ảnh làm hình nền cho máy tính.
+        NSCameraUsageDescription: Chụp ảnh làm hình nền cho máy tính.
